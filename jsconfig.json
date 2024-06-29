@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"noEmit": true,
+		"strictNullChecks": true,
+		"strictFunctionTypes": true,
+		"strictBindCallApply": true,
+		"strictPropertyInitialization": true,
+		"allowSyntheticDefaultImports": true,
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "node",
+		"typeRoots": ["node_modules/@types"]
+	},
+	"include": ["main.js"]
+}

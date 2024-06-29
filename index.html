@@ -1,0 +1,144 @@
+<meta charset="utf-8">
+
+<style>
+	body {
+		display: flex;
+		flex-direction: column;
+	}
+	.content {
+		max-width: 960px;
+		margin: 8px auto;
+	}
+	
+	.tip {
+		margin-left: 4px;
+		color: darkgreen;
+	}
+	.tip.error {
+		color: red;
+	}
+
+	.dpad button {
+		width: 100%;
+	}
+</style>
+
+<script src="main.js"></script>
+<script>
+	async function tip(button, val) {
+		let elem
+		if (button.nextElementSibling?.classList.contains('tip')) {
+			elem = button.nextElementSibling
+		} else {
+			elem = document.createElement('span')
+			elem.className = 'tip'
+			button.insertAdjacentElement('afterend', elem)
+		}
+		elem.textContent = '…'
+
+		try {
+			await val
+			elem.classList.remove('error')
+			elem.textContent = 'OK'
+		} catch (ex) {
+			elem.classList.add('error')
+			elem.textContent = ex + ''
+			throw ex
+		}
+	}
+</script>
+
+<div class="content">
+	<p style="background-color: yellow;">
+		If something goes wrong, go to OS bluetooth settings and <strong>unpair camera</strong> there!
+		Then refresh page and start from step 1.
+	</p>
+
+	<h2>Step 1: start blutooth pairing on the camera</h2>
+	<p>
+		Menu → wireless settings → bluetooth → pairing
+	</p>
+	
+	<h2>Step 2: pair camera in OS bluetooth settings</h2>
+	<p>
+		Regular pairing from Web Buetooth is not supported but it is required by the camera.
+	</p>
+	
+	<h2>Step 3: create Web Bluetooth connection</h2>
+	<p>
+		<button onclick="tip(this, cameraConnect(() => alert('camera disconnected')).then(x => window.gatt = x))">
+			connect
+		</button>
+	</p>
+	
+	<h2>Step 4: handshake</h2>
+	<p>
+		<button onclick="tip(this, cameraHandshake(window.gatt, true))">
+			first time handshake after pairing
+		</button>
+		or
+		<button onclick="tip(this, cameraHandshake(window.gatt, false))">have previously handshaken (seems only required for Wi-Fi AP)</button>
+	</p>
+	
+	<h2>Step 5: some actions</h2>
+	<fieldset>
+		<legend>Shooting</legend>
+		<button onclick="tip(this, cameraSwitchMode(window.gatt, CAMERA_MODE_SHOOTING))">Switch to shooting mode</button>
+		<br>
+		<button onclick="tip(this, cameraPressShutter(window.gatt, 200))">Press shutter button</button>
+		<button onclick="tip(this, cameraPressShutter(window.gatt, 2000))">Hold shutter button for 2s</button>
+		<br>
+		<button onclick="tip(this, cameraStartVideo(window.gatt))">Start video recording</button>
+		<button onclick="tip(this, cameraStopVideo(window.gatt))">Stop video recording</button>
+	</fieldset>
+
+	<fieldset>
+		<legend>Playback</legend>
+		<button onclick="tip(this, cameraSwitchMode(window.gatt, CAMERA_MODE_PLAYBACK))">Switch to playback mode</button>
+		
+		<table class="dpad">
+			<tr>
+				<td></td>
+				<td><button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_UP))">Up</button></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td><button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_LEFT))">Left</button></td>
+				<td><button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_MIDDLE))">Mid</button></td>
+				<td><button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_RIGHT))">Right</button></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td><button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_DOWN))">Down</button></td>
+				<td></td>
+			</tr>
+		</table>
+
+		<button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_ZOOM_IN))">Zoom in</button>
+		<button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_ZOOM_OUT))">Zoom out</button>
+		<br>
+
+		<button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_SLIDESHOW_START))">Start slideshow</button>
+		<button onclick="tip(this, cameraPressPlaybackButton(window.gatt, CAMERA_BUTTON_BACK))">Stop slideshow / exit zoom</button>
+	</fieldset>
+
+	<fieldset>
+		<legend>WiFi</legend>
+		<button onclick="tip(this, cameraStartWifiAccessPoint(window.gatt, true).then(alert))">start WiFi Access Point</button>
+		(will disconnect bluetooth)
+	</fieldset>
+
+	<fieldset>
+		<legend>Power</legend>
+		<button onclick="tip(this, cameraSwitchMode(window.gatt, CAMERA_MODE_SUSPEND))">Suspend</button>
+		<button onclick="tip(this, cameraSwitchMode(window.gatt, CAMERA_MODE_WAKEUP))">Wake up</button>
+		<br>
+		<button onclick="tip(this, cameraResetDisplayOffTimer(window.gatt))">Turn on display which was turned off by power saving</button>
+	</fieldset>
+
+	<fieldset>
+		<legend>Device info</legend>
+		<button onclick="tip(this, cameraGetDeviceInfo(window.gatt).then(alert))">Get</button>
+		Doesn't actually require a handshake.
+	</fieldset>
+</div>
