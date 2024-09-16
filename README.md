@@ -6,7 +6,7 @@ Tested with Canon EOS M6. Other models may have different shooting API. For exam
 
 ### Pairing
 
-First, the camera should be paired with another bluetooth device in a traditional bluetooth way. If it has peen previously paired but something went wrong during handshake, camera must be unpaired first.
+First, the camera should be paired with another bluetooth device in a traditional bluetooth way. If it has been previously paired but something went wrong during handshake, camera must be unpaired first.
 
 Web Bluetooth does not support such pairing, so if you want to try this demo, you will have to first manually pair the camera via your OS UI (such as `bluetoothctl pair <address>` on Linux). If you will re-implement this API using `python` and [bleak](https://bleak.readthedocs.io/), you may use `await client.pair()`.
 
@@ -15,7 +15,7 @@ Web Bluetooth does not support such pairing, so if you want to try this demo, yo
 
 Camera also calles this step "pairing" but here I will call it "handshaking" to distinguish it from regular bluetooth process.
 
-If new devies has just been paired:
+If new device has just been paired:
 
 1. start handshake by sending device name prefixed by `01` (see handle `0xf108`)
 2. wait for notification and check if value is `02` (see handle `0xf108`)
@@ -23,7 +23,7 @@ If new devies has just been paired:
 4. (optional) initialize Wi-Fi info (see handle `0xf204`)
 5. send handshake finish marker (see handle `0xf104`)
 
-If device has been previously paied and handshaked, only steps 4 and 5 should be performed. Although if they are omitted, everything (expect starting Wi-Fi AP) seems still working.
+If device has been previously paied and handshaked, only steps 4 and 5 should be performed. Although if they are omitted, everything (except starting Wi-Fi AP) seems still working.
 
 
 ### Taking photos, recording videos
@@ -88,7 +88,7 @@ Characteristics:
  * `00020001-0000-1000-0000-d8492fffa821` (`0xf202`) — unknown
    * read returns `0f000000`
  * `00020002-0000-1000-0000-d8492fffa821` (`0xf204`) — Wi-Fi initialization and info
-   * write `0a` populates Wi-Fi AP name and passwords characterstics (otherwise they eturn zeroes)
+   * write `0a` populates Wi-Fi AP name and passwords characterstics (otherwise they return zeroes)
      * notifies with 19 bytes where [10:16] are a BSSID and others are unknown
    * write `01` starts Wi-Fi AP, disconects bluetooth
  * `00020003-0000-1000-0000-d8492fffa821` (`0xf207`) — result of Wi-Fi initialization
@@ -114,14 +114,14 @@ UUID: `00030000-0000-1000-0000-d8492fffa821`
    * write `02` switches to shooting mode
    * write `03` wakes up camera from suspend (which may be caused by writing `05` or by Auto Power Down timer from camera Power Saving menu)
    * write `04` exact purpose is unknown
-     * write `03`, `04`, `03` (separately) can be used to turn screen back on if it was turned off by camera Display Off timer (from Power Saving menu); writing only `03` will not turn the scrren on, it must be `04` and then `03`; but if `04` will be written two times in a row, something will break until reconnection and may command will start returning errors, so it is safier to write `03` then `04` and then `03` again
+     * write `03`, `04`, `03` (separately) can be used to turn screen back on if it was turned off by camera Display Off timer (from Power Saving menu); writing only `03` will not turn the scrren on, it must be `04` and then `03`; but if `04` will be written two times in a row, something will break until reconnection and many commands will start returning errors, so it is safier to write `03` then `04` and then `03` again
    * write `05` sends camera to suspend
    * write `06` is unknown
    * write `07`+ is unknown, first write is ok, but subsequent commands start returning errors
  * `00030011-0000-1000-0000-d8492fffa821` (`0xf309`) — result of switching modes
    * notifies with `04` after switching to shooting mode by writing `02` to `0xf307`, via camera buttons or after triggering wakeup in the shooting mode *only* by writing `03` to `0xf307` (not by pressing some camera buttons)
    * notifies with `03` after switching to playback mode by writing `02` to `0xf307`, via camera buttons or after triggering wakeup in the playback mode *only* by writing `03` to `0xf307` (not by pressing some camera buttons)
-   * notifies with `01` before goting into suspend
+   * notifies with `01` before going into suspend
  * `00030020-0000-1000-0000-d8492fffa821` (`0xf30c`) — playback buttons
    * write `10000080`/`10000040` presses/releases middle button
    * write `08000080`/`08000040` presses/releases right button
@@ -133,7 +133,7 @@ UUID: `00030000-0000-1000-0000-d8492fffa821`
    * write `000100c0`/`00010040` presses/releases slideshow button
    * write `200000c0`/`20000040` presses/releases back button (aborts slideshow, returns zoom to normal)
  * `00030021-0000-1000-0000-d8492fffa821` (`0xf30e`) — playback menus navigation
-   * notifies with `dc010000` after entering playback mode or closing Quick Set menu, regular menu, stopping slideshow and zooming during playback mode
+   * notifies with `dc010000` after entering playback mode or closing Quick Set menu, regular menu, stopping slideshow and exiting zooming during playback mode
    * notifies with `20000000` when Quich Set menu or regular menu is opened
    * notifies with `3f010000` when starting slideshow
    * notifies with `ff000000` when starting zooming
@@ -143,7 +143,12 @@ UUID: `00030000-0000-1000-0000-d8492fffa821`
    * write `0011` stops video
  * `00030031-0000-1000-0000-d8492fffa821` (`0xf313`) — shooting state notifications (there will be no events after handshake until wakeup or shooting mode is triggered (`0xf307`), even if camera is already in shooting mode)
    * notifies with `101010` when pressing focus button on camera (not when autofocusing actually ends) or when pressing video button on camera (not when recording is started)
-   * notifies with `010101` when releasing focus button on camera (if photo is not taken), when photo preview ends (if was taken by camera shutter button), when autofocus has failed (after writing `0001` to `0xf311`) when photo is taken after writing `0001` to `0xf311` (before preview ends!) or when video recording is stopped
+   * notifies with `010101`
+     * when releasing focus button on camera (if photo is not taken)
+     * when photo preview ends (if was taken by camera shutter button)
+     * when photo is taken after writing `0001` to `0xf311` (*before* preview ends!)
+     * when autofocus has failed (after writing `0001` to `0xf311`)
+     * when video recording is stopped
    * notifies with `010201` when autofocus is successful (or it is off) after writing `0001` to `0xf311`
    * notifies with `010102` when video recording is started (by camera button or bluetooth command)
 
